@@ -12,14 +12,11 @@ const BUFFER_SIZE = 16 * 1024;
 buffer: []u8,
 idx: usize = 0,
 
-pub fn init(alloc: std.mem.Allocator, stdout: *StdOut) !Self {
-    try stdout.writeAll("\x1b[?1049h");
-
+pub fn init(alloc: std.mem.Allocator) !Self {
     return .{ .buffer = try alloc.alloc(u8, BUFFER_SIZE) };
 }
 
-pub fn deinit(self: *Self, alloc: std.mem.Allocator, stdout: *StdOut) !void {
-    try stdout.writeAll("\x1b[?1049l");
+pub fn deinit(self: *Self, alloc: std.mem.Allocator) !void {
     alloc.free(self.buffer);
 }
 

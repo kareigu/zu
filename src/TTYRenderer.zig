@@ -14,7 +14,18 @@ window_size: Renderer.WindowSize,
 
 pub fn init() !Self {
     const stdout = io.getStdOut().writer();
+    try stdout.writeAll("\x1b[?1049h");
     return .{ .stdout = stdout, .window_size = try window_size(&stdout) };
+}
+
+pub fn deinit(self: *Self) !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var buffer = std.ArrayList(u8).init(arena.allocator());
+    defer buffer.deinit();
+    try self.clear_screen(.{&buffer});
+    try buffer.appendSlice("\x1b[?1049l");
+    try self.stdout.writeAll(buffer.items);
 }
 
 pub fn out(self: *Self) *StdOut {

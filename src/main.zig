@@ -5,6 +5,7 @@ const TTYRenderer = @import("TTYRenderer.zig");
 
 pub fn main() !void {
     var renderer = try TTYRenderer.init();
+    defer renderer.deinit() catch unreachable;
     var stderr = std.io.getStdErr().writer();
     var stdin = std.io.getStdIn().reader();
 
@@ -15,13 +16,12 @@ pub fn main() !void {
     } catch unreachable;
     const alloc = gpa.allocator();
 
-    var vscreen = try VScreen.init(alloc, renderer.out());
-    defer vscreen.deinit(alloc, renderer.out()) catch unreachable;
+    var vscreen = try VScreen.init(alloc);
+    defer vscreen.deinit(alloc) catch unreachable;
 
     var input = try Input.init(&stdin);
     defer input.deinit() catch unreachable;
 
-    defer renderer.clear_screen(.{}) catch unreachable;
     while (true) {
         try renderer.refresh_screen();
         try vscreen.write_out(renderer.out());
