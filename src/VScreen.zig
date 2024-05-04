@@ -14,7 +14,7 @@ const BUFFER_SIZE = 16 * 1024;
 
 buffer: []u8,
 idx: usize = 0,
-cursor_pos: CursorPos = .{ .x = 0, .y = 0 },
+cursor_pos: CursorPos = .{ .x = 1, .y = 1 },
 
 pub fn init(alloc: std.mem.Allocator) !Self {
     return .{ .buffer = try alloc.alloc(u8, BUFFER_SIZE) };
@@ -31,8 +31,8 @@ pub fn screen_buffer(self: *Self) []const u8 {
 pub fn move_cursor(self: *Self, amount: [2]i4) void {
     const x = @as(i64, @intCast(self.cursor_pos.x)) -| amount[0];
     const y = @as(i64, @intCast(self.cursor_pos.y)) -| amount[1];
-    self.cursor_pos.x = if (x > 0) @intCast(x) else 0;
-    self.cursor_pos.y = if (y > 0) @intCast(y) else 0;
+    self.cursor_pos.x = if (x > 1) @intCast(x) else 1;
+    self.cursor_pos.y = if (y > 1) @intCast(y) else 1;
 }
 
 pub fn write_bytes(self: *Self, bytes: []const u8) !void {
