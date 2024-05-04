@@ -32,6 +32,7 @@ pub fn main() !void {
         switch (try input.process()) {
             .none => continue,
             .quit => break,
+            .move => |amount| vscreen.move_cursor(amount),
             .char => |char| try vscreen.write_bytes(&char),
             .ctrl => |ctrl| try vscreen.write_byte(ctrl),
         }

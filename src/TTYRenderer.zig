@@ -55,6 +55,10 @@ pub fn refresh_screen(self: *Self, vscreen: *VScreen) !void {
 
     try buffer.appendSlice(vscreen.screen_buffer());
 
+    var cursor_pos_buf = [_]u8{0} ** 32;
+    const cursor_pos = try std.fmt.bufPrint(&cursor_pos_buf, "\x1b[{d};{d}H", .{ vscreen.cursor_pos.y, vscreen.cursor_pos.x });
+    try buffer.appendSlice(cursor_pos);
+
     try buffer.appendSlice("\x1b[?25h");
 
     _ = try self.stdout.write(buffer.items);

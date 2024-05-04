@@ -41,6 +41,7 @@ pub fn deinit(self: *Self) !void {
 const InputAction = union(enum) {
     char: [4]u8,
     ctrl: u8,
+    move: [2]i4,
     quit,
     none,
 };
@@ -56,6 +57,19 @@ pub fn process(self: *Self) !InputAction {
 
     if (byte == 13) {
         return .{ .char = [4]u8{ '\r', '\n', 0, 0 } };
+    }
+
+    if (byte == 'h') {
+        return .{ .move = .{ 1, 0 } };
+    }
+    if (byte == 'l') {
+        return .{ .move = .{ -1, 0 } };
+    }
+    if (byte == 'j') {
+        return .{ .move = .{ 0, -1 } };
+    }
+    if (byte == 'k') {
+        return .{ .move = .{ 0, 1 } };
     }
 
     if (byte > 31 and byte < 128) {
