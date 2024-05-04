@@ -22,15 +22,20 @@ pub fn out(self: *Self) *StdOut {
 }
 
 pub fn refresh_screen(self: *Self) !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var buffer = std.ArrayListAligned(u8, null).init(arena.allocator());
+    defer buffer.deinit();
     try self.clear_screen();
     for (0..self.window_size.height) |i| {
-        try self.stdout.writeByte('~');
+        try buffer.append('~');
 
         if (i < self.window_size.height - 1) {
-            _ = try self.stdout.write("\r\n");
+            try buffer.appendSlice("\r\n");
         }
     }
-    _ = try self.stdout.write("\x1b[H");
+    try buffer.appendSlice("\x1b[H");
+    _ = try self.stdout.write(buffer.items);
 }
 
 pub fn clear_screen(self: *Self) !void {
