@@ -51,9 +51,10 @@ pub fn refresh_screen(self: *Self, screen_buffer: []const u8) !void {
     }
 
     try buffer.appendSlice("\x1b[H");
-    try buffer.appendSlice("\x1b[?25h");
 
     try buffer.appendSlice(screen_buffer);
+
+    try buffer.appendSlice("\x1b[?25h");
 
     _ = try self.stdout.write(buffer.items);
 }
