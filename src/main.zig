@@ -2,6 +2,9 @@ const std = @import("std");
 const Input = @import("Input.zig");
 const VScreen = @import("VScreen.zig");
 const TTYRenderer = @import("TTYRenderer.zig");
+const constants = @import("constants");
+
+const title_prompt = std.fmt.comptimePrint("zu - {}\r\n", .{constants.version});
 
 pub fn main() !void {
     var renderer = try TTYRenderer.init();
@@ -18,6 +21,8 @@ pub fn main() !void {
 
     var vscreen = try VScreen.init(alloc);
     defer vscreen.deinit(alloc) catch unreachable;
+
+    try vscreen.write_bytes(title_prompt);
 
     var input = try Input.init(&stdin);
     defer input.deinit() catch unreachable;

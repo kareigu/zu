@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const version = std.SemanticVersion{ .major = 0, .minor = 0, .patch = 1, .pre = "alpha" };
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -12,6 +14,10 @@ pub fn build(b: *std.Build) void {
     });
 
     b.installArtifact(exe);
+
+    var constants = b.addOptions();
+    constants.addOption(std.SemanticVersion, "version", version);
+    exe.root_module.addOptions("constants", constants);
 
     const run_cmd = b.addRunArtifact(exe);
 
