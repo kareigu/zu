@@ -39,12 +39,12 @@ pub fn refresh_screen(self: *Self, screen_buffer: []const u8) !void {
     defer buffer.deinit();
 
     try buffer.appendSlice("\x1b[?25l");
-
-    try self.clear_screen(.{&buffer});
+    try buffer.appendSlice("\x1b[H");
 
     for (0..self.window_size.height) |i| {
         try buffer.append('~');
 
+        try buffer.appendSlice("\x1b[K");
         if (i < self.window_size.height - 1) {
             try buffer.appendSlice("\r\n");
         }
