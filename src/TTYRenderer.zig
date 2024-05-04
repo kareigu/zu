@@ -32,7 +32,7 @@ pub fn out(self: *Self) *StdOut {
     return &self.stdout;
 }
 
-pub fn refresh_screen(self: *Self) !void {
+pub fn refresh_screen(self: *Self, screen_buffer: []const u8) !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     var buffer = std.ArrayList(u8).init(arena.allocator());
@@ -52,6 +52,8 @@ pub fn refresh_screen(self: *Self) !void {
 
     try buffer.appendSlice("\x1b[H");
     try buffer.appendSlice("\x1b[?25h");
+
+    try buffer.appendSlice(screen_buffer);
 
     _ = try self.stdout.write(buffer.items);
 }

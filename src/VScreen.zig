@@ -5,7 +5,6 @@ const Self = @This();
 const Error = error{
     BufferLimitReached,
 };
-const StdOut = @TypeOf(io.getStdOut().writer());
 
 const BUFFER_SIZE = 16 * 1024;
 
@@ -20,9 +19,8 @@ pub fn deinit(self: *Self, alloc: std.mem.Allocator) !void {
     alloc.free(self.buffer);
 }
 
-pub fn write_out(self: *Self, stdout: *StdOut) !void {
-    const to_write = self.buffer[0..self.idx];
-    try stdout.writeAll(to_write);
+pub fn screen_buffer(self: *Self) []const u8 {
+    return self.buffer[0..self.idx];
 }
 
 pub fn write_bytes(self: *Self, bytes: []const u8) !void {
