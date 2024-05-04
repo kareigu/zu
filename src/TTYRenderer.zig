@@ -26,7 +26,11 @@ pub fn refresh_screen(self: *Self) !void {
     defer arena.deinit();
     var buffer = std.ArrayList(u8).init(arena.allocator());
     defer buffer.deinit();
+
+    try buffer.appendSlice("\x1b[?25l");
+
     try self.clear_screen(.{&buffer});
+
     for (0..self.window_size.height) |i| {
         try buffer.append('~');
 
@@ -34,7 +38,10 @@ pub fn refresh_screen(self: *Self) !void {
             try buffer.appendSlice("\r\n");
         }
     }
+
     try buffer.appendSlice("\x1b[H");
+    try buffer.appendSlice("\x1b[?25h");
+
     _ = try self.stdout.write(buffer.items);
 }
 
