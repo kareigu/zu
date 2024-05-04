@@ -24,9 +24,9 @@ pub fn out(self: *Self) *StdOut {
 pub fn refresh_screen(self: *Self) !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
-    var buffer = std.ArrayListAligned(u8, null).init(arena.allocator());
+    var buffer = std.ArrayList(u8).init(arena.allocator());
     defer buffer.deinit();
-    try self.clear_screen();
+    try self.clear_screen(.{&buffer});
     for (0..self.window_size.height) |i| {
         try buffer.append('~');
 
@@ -38,9 +38,28 @@ pub fn refresh_screen(self: *Self) !void {
     _ = try self.stdout.write(buffer.items);
 }
 
-pub fn clear_screen(self: *Self) !void {
-    _ = try self.stdout.write("\x1b[2J");
-    _ = try self.stdout.write("\x1b[H");
+pub fn clear_screen(self: *Self, buffer: anytype) !void {
+    const type_info = @typeInfo(@TypeOf(buffer));
+    const s = switch (type_info) {
+        .Struct => |s| s,
+        else => @compileError("buffer should be contained in a struct"),
+    };
+
+    if (s.fields.len == 0) {
+        _ = try self.stdout.write("\x1b[2J");
+        _ = try self.stdout.write("\x1b[H");
+        return;
+    }
+
+    if (s.fields.len > 1) {
+        @compileError("only buffer should be provided");
+    }
+    var b = switch (s.fields[0].type) {
+        *std.ArrayList(u8) => buffer[0],
+        else => @compileError("buffer should be a ArrayList(u8)"),
+    };
+    try b.appendSlice("\x1b[2J");
+    try b.appendSlice("\x1b[H");
 }
 
 fn window_size(stdout: *const StdOut) !Renderer.WindowSize {

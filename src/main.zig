@@ -21,7 +21,7 @@ pub fn main() !void {
     var input = try Input.init(&stdin);
     defer input.deinit() catch unreachable;
 
-    defer renderer.clear_screen() catch unreachable;
+    defer renderer.clear_screen(.{}) catch unreachable;
     while (true) {
         try renderer.refresh_screen();
         try vscreen.write_out(renderer.out());
