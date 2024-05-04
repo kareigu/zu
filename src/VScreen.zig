@@ -11,7 +11,6 @@ const BUFFER_SIZE = 16 * 1024;
 
 buffer: []u8,
 idx: usize = 0,
-written: usize = 0,
 
 pub fn init(alloc: std.mem.Allocator, stdout: *StdOut) !Self {
     try stdout.writeAll("\x1b[?1049h");
@@ -25,10 +24,8 @@ pub fn deinit(self: *Self, alloc: std.mem.Allocator, stdout: *StdOut) !void {
 }
 
 pub fn write_out(self: *Self, stdout: *StdOut) !void {
-    for (self.written..self.idx) |i| {
-        try stdout.writeByte(self.buffer[i]);
-        self.written += 1;
-    }
+    const to_write = self.buffer[0..self.idx];
+    try stdout.writeAll(to_write);
 }
 
 pub fn write_bytes(self: *Self, bytes: []const u8) !void {
@@ -41,10 +38,15 @@ pub fn write_bytes(self: *Self, bytes: []const u8) !void {
     }
 }
 
-pub fn write_byte(self: *Self, byte: []const u8) !void {
-    self.idx += 1;
-    if (self.idx > self.buffer.len) {
-        return Error.BufferLimitReached;
+pub fn write_byte(self: *Self, byte: u8) !void {
+    var buf = [_]u8{0} ** 4;
+    const wrote = try std.fmt.bufPrint(&buf, "{d}", .{byte});
+
+    for (wrote) |b| {
+        self.idx += 1;
+        if (self.idx > self.buffer.len) {
+            return Error.BufferLimitReached;
+        }
+        self.buffer[self.idx] = b;
     }
-    self.buffer[self.idx] = byte;
 }

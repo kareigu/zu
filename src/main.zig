@@ -1,9 +1,10 @@
 const std = @import("std");
 const Input = @import("Input.zig");
 const VScreen = @import("VScreen.zig");
+const TTYRenderer = @import("TTYRenderer.zig");
 
 pub fn main() !void {
-    var stdout = std.io.getStdOut().writer();
+    var renderer = try TTYRenderer.init();
     var stderr = std.io.getStdErr().writer();
     var stdin = std.io.getStdIn().reader();
 
@@ -14,21 +15,21 @@ pub fn main() !void {
     } catch unreachable;
     const alloc = gpa.allocator();
 
-    var vscreen = try VScreen.init(alloc, &stdout);
-    defer vscreen.deinit(alloc, &stdout) catch unreachable;
+    var vscreen = try VScreen.init(alloc, renderer.out());
+    defer vscreen.deinit(alloc, renderer.out()) catch unreachable;
 
     var input = try Input.init(&stdin);
     defer input.deinit() catch unreachable;
 
+    defer renderer.clear_screen() catch unreachable;
     while (true) {
-        try switch (try input.process()) {
+        try renderer.refresh_screen();
+        try vscreen.write_out(renderer.out());
+        switch (try input.process()) {
             .none => continue,
             .quit => break,
-            .char => |char| {
-                try vscreen.write_bytes(&char);
-                try vscreen.write_out(&stdout);
-            },
-            .ctrl => |ctrl| std.fmt.format(stdout, "{d}", .{ctrl}),
-        };
+            .char => |char| try vscreen.write_bytes(&char),
+            .ctrl => |ctrl| try vscreen.write_byte(ctrl),
+        }
     }
 }
