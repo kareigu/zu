@@ -2,6 +2,7 @@ const std = @import("std");
 const io = std.io;
 const c_ioctl = @cImport(@cInclude("sys/ioctl.h"));
 const Renderer = @import("Renderer.zig");
+const VScreen = @import("VScreen.zig");
 
 const StdOut = @TypeOf(io.getStdOut().writer());
 const Self = @This();
@@ -32,7 +33,7 @@ pub fn out(self: *Self) *StdOut {
     return &self.stdout;
 }
 
-pub fn refresh_screen(self: *Self, screen_buffer: []const u8) !void {
+pub fn refresh_screen(self: *Self, vscreen: *VScreen) !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     var buffer = std.ArrayList(u8).init(arena.allocator());
@@ -52,7 +53,7 @@ pub fn refresh_screen(self: *Self, screen_buffer: []const u8) !void {
 
     try buffer.appendSlice("\x1b[H");
 
-    try buffer.appendSlice(screen_buffer);
+    try buffer.appendSlice(vscreen.screen_buffer());
 
     try buffer.appendSlice("\x1b[?25h");
 

@@ -28,7 +28,7 @@ pub fn main() !void {
     defer input.deinit() catch unreachable;
 
     while (true) {
-        try renderer.refresh_screen(vscreen.screen_buffer());
+        try renderer.refresh_screen(&vscreen);
         switch (try input.process()) {
             .none => continue,
             .quit => break,
