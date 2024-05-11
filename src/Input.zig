@@ -10,6 +10,8 @@ const Error = error{
 
 const StdIn = @TypeOf(io.getStdOut().reader());
 
+const CRTL_START_CHAR = '\x1b';
+
 stdin: *StdIn,
 orig_termios: c_term.termios,
 
@@ -55,6 +57,10 @@ pub fn process(self: *Self) !InputAction {
         return InputAction.quit;
     }
 
+    if (byte == CRTL_START_CHAR) {
+        return self.process_control();
+    }
+
     if (byte == 13) {
         return .{ .char = [4]u8{ '\r', '\n', 0, 0 } };
     }
@@ -77,4 +83,25 @@ pub fn process(self: *Self) !InputAction {
     }
 
     return .{ .ctrl = byte };
+}
+
+fn process_control(self: *Self) !InputAction {
+    const byte = for (0..2) |_| {
+        const v = self.stdin.readByte() catch |e| switch (e) {
+            error.EndOfStream => return InputAction.none,
+            else => return Error.InputReadError,
+        };
+        if (v == '[') {
+            continue;
+        }
+        break v;
+    } else return InputAction.none;
+
+    return switch (byte) {
+        'A' => .{ .move = .{ 0, 1 } },
+        'B' => .{ .move = .{ 0, -1 } },
+        'C' => .{ .move = .{ -1, 0 } },
+        'D' => .{ .move = .{ 1, 0 } },
+        else => .{ .ctrl = byte },
+    };
 }
