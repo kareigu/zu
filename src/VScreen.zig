@@ -47,13 +47,13 @@ pub fn write_bytes(self: *Self, bytes: []const u8) !void {
 
 pub fn write_byte(self: *Self, byte: u8) !void {
     var buf = [_]u8{0} ** 4;
-    const wrote = try std.fmt.bufPrint(&buf, "{d}", .{byte});
+    const buf_slice = try std.fmt.bufPrint(&buf, "{d}", .{byte});
 
-    for (wrote) |b| {
+    for (buf_slice) |buf_byte| {
         self.idx += 1;
         if (self.idx > self.buffer.len) {
             return Error.BufferLimitReached;
         }
-        self.buffer[self.idx] = b;
+        self.buffer[self.idx] = buf_byte;
     }
 }
