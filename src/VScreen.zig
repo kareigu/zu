@@ -25,7 +25,7 @@ pub fn deinit(self: *Self, alloc: std.mem.Allocator) !void {
 }
 
 pub fn screen_buffer(self: *Self) []const u8 {
-    return self.buffer[0..self.idx];
+    return self.buffer[0 .. self.idx + 1];
 }
 
 pub fn move_cursor(self: *Self, amount: [2]i4) void {
