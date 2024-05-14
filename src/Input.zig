@@ -11,6 +11,12 @@ const Error = error{
 const StdIn = @TypeOf(io.getStdOut().reader());
 
 const CRTL_START_CHAR = '\x1b';
+const UTF8_BYTES = struct {
+    const TWO_BYTE = 0b110;
+    const THREE_BYTE = 0b1110;
+    const FOUR_BYTE = 0b11110;
+    const FOLLOW_UP_BYTE = 0b10;
+};
 
 stdin: *StdIn,
 orig_termios: c_term.termios,
@@ -82,6 +88,10 @@ pub fn process(self: *Self) !InputAction {
         return .{ .char = [4]u8{ byte, 0, 0, 0 } };
     }
 
+    if (try self.handle_utf8(byte)) |bytes| {
+        return .{ .char = bytes };
+    }
+
     return .{ .ctrl = byte };
 }
 
@@ -104,4 +114,59 @@ fn process_control(self: *Self) !InputAction {
         'D' => .{ .move = .{ 1, 0 } },
         else => .{ .ctrl = byte },
     };
+}
+
+fn handle_utf8(self: *const Self, byte: u8) !?[4]u8 {
+    if (byte >> 5 == UTF8_BYTES.TWO_BYTE) {
+        const follow_up_byte = self.stdin.readByte() catch |e| switch (e) {
+            error.EndOfStream => return null,
+            else => return Error.InputReadError,
+        };
+
+        if (follow_up_byte >> 6 != UTF8_BYTES.FOLLOW_UP_BYTE) {
+            return null;
+        }
+
+        return .{ byte, follow_up_byte, 0, 0 };
+    }
+
+    if (byte >> 4 == UTF8_BYTES.THREE_BYTE) {
+        var follow_up_bytes = [2]u8{ 0, 0 };
+
+        for (0..2) |i| {
+            const follow_up_byte = self.stdin.readByte() catch |e| switch (e) {
+                error.EndOfStream => return null,
+                else => return Error.InputReadError,
+            };
+
+            if (follow_up_byte >> 6 != UTF8_BYTES.FOLLOW_UP_BYTE) {
+                return null;
+            }
+
+            follow_up_bytes[i] = follow_up_byte;
+        }
+
+        return .{ byte, follow_up_bytes[0], follow_up_bytes[1], 0 };
+    }
+
+    if (byte >> 3 == UTF8_BYTES.FOUR_BYTE) {
+        var follow_up_bytes = [3]u8{ 0, 0, 0 };
+
+        for (0..3) |i| {
+            const follow_up_byte = self.stdin.readByte() catch |e| switch (e) {
+                error.EndOfStream => return null,
+                else => return Error.InputReadError,
+            };
+
+            if (follow_up_byte >> 6 != UTF8_BYTES.FOLLOW_UP_BYTE) {
+                return null;
+            }
+
+            follow_up_bytes[i] = follow_up_byte;
+        }
+
+        return .{ byte, follow_up_bytes[0], follow_up_bytes[1], follow_up_bytes[2] };
+    }
+
+    return null;
 }
