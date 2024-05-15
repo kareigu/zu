@@ -54,11 +54,5 @@ pub fn write_byte(self: *Self, byte: u8) !void {
     var buf = [_]u8{0} ** 4;
     const buf_slice = try std.fmt.bufPrint(&buf, "{d}", .{byte});
 
-    for (buf_slice) |buf_byte| {
-        self.idx += 1;
-        if (self.idx > self.buffer.len) {
-            return Error.BufferLimitReached;
-        }
-        self.buffer[self.idx] = buf_byte;
-    }
+    try self.write_bytes(buf_slice);
 }
