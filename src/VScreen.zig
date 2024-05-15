@@ -37,7 +37,12 @@ pub fn move_cursor(self: *Self, amount: [2]i4) void {
 
 pub fn write_bytes(self: *Self, bytes: []const u8) !void {
     for (bytes) |byte| {
+        if (byte == 0) {
+            continue;
+        }
+
         self.idx += 1;
+
         if (self.idx > self.buffer.len) {
             return Error.BufferLimitReached;
         }
