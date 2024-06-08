@@ -4,6 +4,10 @@ const VScreen = @import("VScreen.zig");
 const TTYRenderer = @import("TTYRenderer.zig");
 const constants = @import("constants");
 
+comptime {
+    _ = @import("Rope.zig");
+}
+
 const title_prompt = std.fmt.comptimePrint("zu - {}\r\n", .{constants.version});
 
 pub fn main() !void {
