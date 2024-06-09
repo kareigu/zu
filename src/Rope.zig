@@ -131,6 +131,27 @@ pub fn total_length(self: *const Self) usize {
     };
 }
 
+pub fn push_str(self: *Self, alloc: std.mem.Allocator, str: []const u8) !*Self {
+    const text_rope = try Self.create_text_rope(alloc, str);
+    if (self.data == Data.text) {
+        return try Self.create_branch_rope(alloc, self, text_rope);
+    }
+
+    if (self.data.branch.left == null) {
+        self.data.branch.left = text_rope;
+        return self;
+    }
+
+    if (self.data.branch.right == null) {
+        self.data.branch.right = text_rope;
+        return self;
+    }
+
+    const right_rope = try Self.create_branch_rope(alloc, text_rope, null);
+    const parent_rope = try Self.create_branch_rope(alloc, self, right_rope);
+    return parent_rope;
+}
+
 test "Rope.length() with a single branch" {
     const alloc = std.testing.allocator;
     const rope_left = try Self.create_text_rope(alloc, "test_left");
@@ -217,4 +238,18 @@ test "Rope.init() over max single rope multiple times" {
     try std.testing.expectEqualStrings("12345678", data1);
     const data2 = rope.data.branch.right.?.data.branch.left.?.data.text;
     try std.testing.expectEqualStrings("930", data2);
+}
+
+test "Rope.push_str() push under max single rope length" {
+    const alloc = std.testing.allocator;
+    const text = "1234567";
+
+    var rope = try Self.init(alloc, text);
+    defer rope.deinit(alloc);
+
+    rope = try rope.push_str(alloc, text);
+
+    try std.testing.expectEqual(text.len * 2, rope.total_length());
+    try std.testing.expectEqualStrings(text, rope.data.branch.left.?.data.text);
+    try std.testing.expectEqualStrings(text, rope.data.branch.right.?.data.text);
 }
