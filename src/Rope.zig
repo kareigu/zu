@@ -208,22 +208,24 @@ test "Rope.length() with 3 branches" {
 
 test "Rope.init() under max single rope length" {
     const alloc = std.testing.allocator;
-    const rope = try Self.init(alloc, "1234567");
+    const text = "1234567";
+    const rope = try Self.init(alloc, text);
     defer rope.deinit(alloc);
 
-    const expected = Self{ .data = .{ .text = "1234567" }, .len = 7 };
+    const expected = Self{ .data = .{ .text = text }, .len = 7 };
     try std.testing.expectEqual(expected, rope.*);
 }
 
 test "Rope.init() over max single rope length" {
     const alloc = std.testing.allocator;
-    const rope = try Self.init(alloc, "1234567891011");
+    const text = "1234567891011";
+    const rope = try Self.init(alloc, text);
     defer rope.deinit(alloc);
 
     try std.testing.expectEqual(8, rope.data.branch.left.?.len);
-    try std.testing.expectEqualStrings("12345678", rope.data.branch.left.?.data.text);
+    try std.testing.expectEqualStrings(text[0..8], rope.data.branch.left.?.data.text);
     try std.testing.expectEqual(5, rope.data.branch.right.?.len);
-    try std.testing.expectEqualStrings("91011", rope.data.branch.right.?.data.text);
+    try std.testing.expectEqualStrings(text[8..], rope.data.branch.right.?.data.text);
     try std.testing.expectEqual(13, rope.total_length());
 }
 
@@ -235,9 +237,9 @@ test "Rope.init() over max single rope multiple times" {
 
     try std.testing.expectEqual(text.len, rope.total_length());
     const data1 = rope.data.branch.left.?.data.branch.left.?.data.branch.left.?.data.branch.left.?.data.text;
-    try std.testing.expectEqualStrings("12345678", data1);
+    try std.testing.expectEqualStrings(text[0..8], data1);
     const data2 = rope.data.branch.right.?.data.branch.left.?.data.text;
-    try std.testing.expectEqualStrings("930", data2);
+    try std.testing.expectEqualStrings(text[48..], data2);
 }
 
 test "Rope.push_str() push under max single rope length" {
