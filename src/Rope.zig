@@ -132,22 +132,22 @@ pub fn total_length(self: *const Self) usize {
 }
 
 pub fn push_str(self: *Self, alloc: std.mem.Allocator, str: []const u8) !*Self {
-    const text_rope = try Self.create_text_rope(alloc, str);
+    const push_rope = try Self.init(alloc, str);
     if (self.data == Data.text) {
-        return try Self.create_branch_rope(alloc, self, text_rope);
+        return try Self.create_branch_rope(alloc, self, push_rope);
     }
 
     if (self.data.branch.left == null) {
-        self.data.branch.left = text_rope;
+        self.data.branch.left = push_rope;
         return self;
     }
 
     if (self.data.branch.right == null) {
-        self.data.branch.right = text_rope;
+        self.data.branch.right = push_rope;
         return self;
     }
 
-    const right_rope = try Self.create_branch_rope(alloc, text_rope, null);
+    const right_rope = try Self.create_branch_rope(alloc, push_rope, null);
     const parent_rope = try Self.create_branch_rope(alloc, self, right_rope);
     return parent_rope;
 }
@@ -252,4 +252,20 @@ test "Rope.push_str() push under max single rope length" {
     try std.testing.expectEqual(text.len * 2, rope.total_length());
     try std.testing.expectEqualStrings(text, rope.data.branch.left.?.data.text);
     try std.testing.expectEqualStrings(text, rope.data.branch.right.?.data.text);
+}
+
+test "Rope.push_str() push over max single rope length" {
+    const alloc = std.testing.allocator;
+    const text_base = "1234567";
+    const text_push = "1234567891011";
+
+    var rope = try Self.init(alloc, text_base);
+    defer rope.deinit(alloc);
+
+    rope = try rope.push_str(alloc, text_push);
+
+    try std.testing.expectEqual(text_base.len + text_push.len, rope.total_length());
+    try std.testing.expectEqualStrings(text_base, rope.data.branch.left.?.data.text);
+    try std.testing.expectEqualStrings(text_push[0..8], rope.data.branch.right.?.data.branch.left.?.data.text);
+    try std.testing.expectEqualStrings(text_push[8..], rope.data.branch.right.?.data.branch.right.?.data.text);
 }
