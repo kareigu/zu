@@ -1,5 +1,8 @@
 const std = @import("std");
 const Self = @This();
+const Error = error{
+    InvalidIndex,
+};
 
 const Branch = struct {
     left: ?*Self,
@@ -152,6 +155,28 @@ pub fn push_str(self: *Self, alloc: std.mem.Allocator, str: []const u8) !*Self {
     return parent_rope;
 }
 
+pub fn get_char(self: *const Self, index: usize) Error!u8 {
+    if (self.data == Data.text) {
+        if (index > self.data.text.len) {
+            return error.InvalidIndex;
+        }
+        return self.data.text[index];
+    }
+
+    if (index > self.len) {
+        if (self.data.branch.right) |right| {
+            return right.get_char(index - self.len);
+        }
+        return error.InvalidIndex;
+    }
+
+    if (self.data.branch.left) |left| {
+        return left.get_char(index);
+    }
+
+    return error.InvalidIndex;
+}
+
 test "Rope.length() with a single branch" {
     const alloc = std.testing.allocator;
     const rope_left = try Self.create_text_rope(alloc, "test_left");
@@ -270,4 +295,37 @@ test "Rope.push_str() push over max single rope length" {
     try std.testing.expectEqualStrings(text_base, rope.data.branch.left.?.data.text);
     try std.testing.expectEqualStrings(text_push[0..8], rope.data.branch.right.?.data.branch.left.?.data.text);
     try std.testing.expectEqualStrings(text_push[8..], rope.data.branch.right.?.data.branch.right.?.data.text);
+}
+
+test "Rope.get_char()" {
+    const alloc = std.testing.allocator;
+    const text = "1234567";
+
+    const text_rope = try Self.create_text_rope(alloc, text);
+    defer text_rope.deinit(alloc);
+
+    const char = try text_rope.get_char(2);
+    try std.testing.expectEqual('3', char);
+
+    const rope = try Self.init(alloc, text ++ text);
+    defer rope.deinit(alloc);
+
+    const char2 = try rope.get_char(5);
+    try std.testing.expectEqual('6', char2);
+
+    const char3 = try rope.get_char(9);
+    try std.testing.expectEqual('3', char3);
+}
+
+test "Rope.get_char() errors" {
+    const alloc = std.testing.allocator;
+    const text = "1234";
+
+    var rope = try Self.init(alloc, text);
+    try std.testing.expectError(Error.InvalidIndex, rope.get_char(5));
+    rope.deinit(alloc);
+
+    rope = try Self.init(alloc, text ++ text ++ text ++ text);
+    try std.testing.expectError(Error.InvalidIndex, rope.get_char(25));
+    rope.deinit(alloc);
 }
