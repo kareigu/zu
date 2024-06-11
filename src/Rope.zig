@@ -157,13 +157,13 @@ pub fn push_str(self: *Self, alloc: std.mem.Allocator, str: []const u8) !*Self {
 
 pub fn get_char(self: *const Self, index: usize) Error!u8 {
     if (self.data == Data.text) {
-        if (index > self.data.text.len) {
+        if (index > self.data.text.len - 1) {
             return error.InvalidIndex;
         }
         return self.data.text[index];
     }
 
-    if (index > self.len) {
+    if (index > self.len - 1) {
         if (self.data.branch.right) |right| {
             return right.get_char(index - self.len);
         }
@@ -329,3 +329,14 @@ test "Rope.get_char() errors" {
     try std.testing.expectError(Error.InvalidIndex, rope.get_char(25));
     rope.deinit(alloc);
 }
+
+test "Rope.get_char() border character" {
+    const alloc = std.testing.allocator;
+    const text = "123456789";
+
+    const rope = try Self.init(alloc, text);
+    defer rope.deinit(alloc);
+
+    try std.testing.expectEqual('9', rope.get_char(8));
+}
+
