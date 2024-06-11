@@ -1,4 +1,5 @@
 const std = @import("std");
+const selections = @import("selections.zig");
 const Self = @This();
 const Error = error{
     InvalidIndex,
@@ -177,6 +178,16 @@ pub fn get_char(self: *const Self, index: usize) Error!u8 {
     return error.InvalidIndex;
 }
 
+pub fn get_range(self: *const Self, alloc: std.mem.Allocator, range: selections.Range) ![]u8 {
+    const buf = try alloc.alloc(u8, range.len);
+    errdefer alloc.free(buf);
+
+    for (buf, 0..) |*b, i| {
+        b.* = try self.get_char(i + range.start);
+    }
+    return buf;
+}
+
 test "Rope.length() with a single branch" {
     const alloc = std.testing.allocator;
     const rope_left = try Self.create_text_rope(alloc, "test_left");
@@ -340,3 +351,45 @@ test "Rope.get_char() border character" {
     try std.testing.expectEqual('9', rope.get_char(8));
 }
 
+test "Rope.get_range()" {
+    const alloc = std.testing.allocator;
+    const text = "1234567";
+
+    const rope = try Self.init(alloc, text);
+    defer rope.deinit(alloc);
+
+    const range = try rope.get_range(alloc, .{ .start = 2, .len = 3 });
+    defer alloc.free(range);
+    try std.testing.expectEqualStrings("345", range);
+
+    const long_rope = try Self.init(alloc, text ++ text);
+    defer long_rope.deinit(alloc);
+
+    const range2 = try long_rope.get_range(alloc, .{ .start = 4, .len = 8 });
+    defer alloc.free(range2);
+    try std.testing.expectEqualStrings("56712345", range2);
+}
+
+test "Rope.get_range() zero length" {
+    const alloc = std.testing.allocator;
+    const text = "1234567";
+
+    const rope = try Self.init(alloc, text);
+    defer rope.deinit(alloc);
+
+    const range = try rope.get_range(alloc, .{ .start = 4, .len = 0 });
+    try std.testing.expectEqualStrings("", range);
+}
+
+test "Rope.get_range() errors" {
+    const alloc = std.testing.allocator;
+    const text = "1234567";
+
+    const rope = try Self.init(alloc, text);
+    defer rope.deinit(alloc);
+
+    try std.testing.expectError(Error.InvalidIndex, rope.get_range(
+        alloc,
+        .{ .start = 9, .len = 3 },
+    ));
+}
